@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>発表コメントボード</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="submitView" class="submit-view hidden">
+    <section class="submit-card">
+      <p class="eyebrow">LIVE Q&A</p>
+      <h1>質問・感想を送る</h1>
+      <p class="muted">発表者に伝えたい質問や感想を入力してください（200文字以内）。</p>
+      <form id="commentForm">
+        <label for="commentInput">コメント</label>
+        <textarea id="commentInput" maxlength="200" rows="5" placeholder="例：この結果になった理由を知りたいです。" required></textarea>
+        <div class="form-bottom"><span id="charCount">0 / 200</span><button type="submit" id="sendButton">送信する</button></div>
+        <p id="submitStatus" role="status" aria-live="polite"></p>
+      </form>
+      <p class="privacy-note">名前や住所など、個人情報は入力しないでください。</p>
+    </section>
+  </main>
+
+  <main id="displayView" class="display-view hidden">
+    <header class="display-header">
+      <div><p class="eyebrow">LIVE Q&A</p><h1>質問・コメント</h1></div>
+      <span class="live-pill"><span class="live-dot"></span> LIVE</span>
+    </header>
+    <section class="comment-stage" aria-live="polite" aria-atomic="true">
+      <p class="display-label">参加者からのコメント</p>
+      <p id="currentComment" class="current-comment">コメントを待っています…</p>
+      <p id="displayStatus" class="display-status">新しい投稿がここに表示されます</p>
+    </section>
+    <footer class="display-footer"><span id="commentTotal">0件のコメント</span><span>10秒ごとにランダム切替</span></footer>
+  </main>
+
+  <main id="errorView" class="submit-view hidden">
+    <section class="submit-card"><h1>設定が必要です</h1><p>READMEの手順に沿って、SupabaseのURLと公開用anon keyを設定してください。</p></section>
+  </main>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
