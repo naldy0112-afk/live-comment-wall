@@ -69,7 +69,50 @@
         window.location.href = "./?mode=admin";
       }
     );
+    async function loadComments() {
+      const list = document.getElementById("adminComments");
+      const status = document.getElementById("commentStatus");
 
+      status.textContent = "コメントを読み込んでいます…";
+      list.replaceChildren();
+
+      const { data, error } = await supabase
+        .from("comments")
+        .select("id, body, created_at, saved_at")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        status.textContent = "コメントを読み込めませんでした。";
+        console.error(error);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        status.textContent = "コメントはまだありません。";
+        return;
+      }
+
+      status.textContent = data.length + "件のコメント";
+
+      data.forEach((comment) => {
+        const article = document.createElement("article");
+        article.style.border = "1px solid #ccc";
+        article.style.borderRadius = "8px";
+        article.style.padding = "12px";
+        article.style.margin = "12px 0";
+
+        const body = document.createElement("p");
+        body.textContent = comment.body;
+
+        const date = document.createElement("small");
+        date.textContent = new Date(
+          comment.created_at
+        ).toLocaleString("ja-JP");
+
+        article.append(body, date);
+        list.appendChild(article);
+      });
+    }
     checkAdmin();
   </script>
 </body>
