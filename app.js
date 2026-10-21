@@ -196,11 +196,7 @@ function setupAdmin(supabase) {
       return;
     }
 
-    status.textContent = "ログイン成功！";
-    panel.classList.remove("hidden");
-    loginButton.classList.add("hidden");
-
-    await loadPresentations();
+   window.location.href = "./admin.html";
   });
 
   presentationForm.addEventListener(
