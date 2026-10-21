@@ -109,8 +109,75 @@
           comment.created_at
         ).toLocaleString("ja-JP");
 
-        article.append(body, date);
+        
+        const savedLabel = document.createElement("p");
+        savedLabel.textContent = comment.saved_at
+          ? "保存済み"
+          : "未保存";
+
+        const saveButton = document.createElement("button");
+        saveButton.textContent = comment.saved_at
+          ? "保存を解除"
+          : "保存する";
+
+        saveButton.addEventListener("click", async () => {
+          saveButton.disabled = true;
+
+          const { error } = await supabase
+            .from("comments")
+            .update({
+              saved_at: comment.saved_at
+                ? null
+                : new Date().toISOString()
+            })
+            .eq("id", comment.id);
+
+          if (error) {
+            console.error(error);
+            status.textContent = "保存に失敗しました。";
+            saveButton.disabled = false;
+            return;
+          }
+
+          await loadComments();
+        });
+
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "削除する";
+
+        deleteButton.addEventListener("click", async () => {
+          if (!confirm("このコメントを削除してもよいですか？")) {
+            return;
+          }
+
+          deleteButton.disabled = true;
+
+          const { error } = await supabase
+            .from("comments")
+            .delete()
+            .eq("id", comment.id);
+
+          if (error) {
+            console.error(error);
+            status.textContent =
+              "削除できませんでした。管理者権限を確認してください。";
+            deleteButton.disabled = false;
+            return;
+          }
+
+          await loadComments();
+        });
+
+        article.append(
+          body,
+          date,
+          savedLabel,
+          saveButton,
+          deleteButton
+        );
+
         list.appendChild(article);
+
       });
     }
        await checkAdmin();
