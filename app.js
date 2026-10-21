@@ -111,43 +111,159 @@ function setupAdmin(supabase) {
   const status = $("adminStatus");
   const loginButton = $("adminLoginButton");
   const panel = $("adminPanel");
+  const presentationForm = $("presentationForm");
+  const presentationTitle = $("presentationTitle");
+  const presentationStatus = $("presentationStatus");
+  const currentPresentation = $("currentPresentation");
+  const presentationList = $("presentationList");
 
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    loginButton.disabled = true;
-    status.textContent = "ログイン中…";
+  async function loadPresentations() {
+    currentPresentation.textContent = "読み込み中…";
+    presentationList.replaceChildren();
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.value.trim(),
-      password: password.value
-    });
-
-    loginButton.disabled = false;
+    const { data, error } = await supabase
+      .from("presentations")
+      .select("id, title, status, created_at")
+      .order("created_at", { ascending: false });
 
     if (error) {
-      status.textContent = "ログインできませんでした。メールアドレスとパスワードを確認してください。";
+      currentPresentation.textContent =
+        "発表を読み込めませんでした。";
       console.error(error);
       return;
     }
 
-    const { data: admin, error: adminError } = await supabase.rpc("is_admin");
+    const active = data.find(
+      (item) => item.status === "active"
+    );
+
+    currentPresentation.textContent = active
+      ? active.title
+      : "開催中の発表はありません。";
+
+    const archived = data.filter(
+      (item) => item.status === "archived"
+    );
+
+    if (archived.length === 0) {
+      const li = document.createElement("li");
+      li.textContent = "過去の発表はまだありません。";
+      presentationList.appendChild(li);
+      return;
+    }
+
+    archived.forEach((item) => {
+      const li = document.createElement("li");
+
+      li.textContent =
+        item.title + "（" +
+        new Date(item.created_at).toLocaleDateString("ja-JP") +
+        "）";
+
+      presentationList.appendChild(li);
+    });
+  }
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    loginButton.disabled = true;
+    status.textContent = "ログイン中…";
+
+    const { error } =
+      await supabase.auth.signInWithPassword({
+        email: email.value.trim(),
+        password: password.value
+      });
+
+    loginButton.disabled = false;
+
+    if (error) {
+      status.textContent =
+        "ログインできませんでした。メールアドレスとパスワードを確認してください。";
+      console.error(error);
+      return;
+    }
+
+    const { data: admin, error: adminError } =
+      await supabase.rpc("is_admin");
 
     if (adminError || admin !== true) {
       await supabase.auth.signOut();
-      status.textContent = "このアカウントには管理者権限がありません。";
+      status.textContent =
+        "このアカウントには管理者権限がありません。";
+      console.error(adminError);
       return;
     }
 
     status.textContent = "ログイン成功！";
     panel.classList.remove("hidden");
-    form.querySelector("button[type='submit']").classList.add("hidden");
+    loginButton.classList.add("hidden");
+
+    await loadPresentations();
   });
 
-  $("adminLogoutButton").addEventListener("click", async () => {
-    await supabase.auth.signOut();
-    panel.classList.add("hidden");
-    form.querySelector("button[type='submit']").classList.remove("hidden");
-    password.value = "";
-    status.textContent = "ログアウトしました。";
-  });
+  presentationForm.addEventListener(
+    "submit",
+    async (event) => {
+      event.preventDefault();
+
+      const title = presentationTitle.value.trim();
+
+      if (!title) {
+        presentationStatus.textContent =
+          "発表名を入力してください。";
+        return;
+      }
+
+      const createButton =
+        $("createPresentationButton");
+
+      createButton.disabled = true;
+      presentationStatus.textContent =
+        "発表を作成中…";
+
+      try {
+        const { error } = await supabase.rpc(
+          "create_presentation",
+          { p_title: title }
+        );
+
+        if (error) {
+          console.error(error);
+          presentationStatus.textContent =
+            "作成できませんでした。エラーを確認してください。";
+          return;
+        }
+
+        presentationStatus.textContent =
+          "新しい発表を作成しました！";
+
+        presentationTitle.value = "";
+        await loadPresentations();
+      } finally {
+        createButton.disabled = false;
+      }
+    }
+  );
+
+  $("adminLogoutButton").addEventListener(
+    "click",
+    async () => {
+      const { error } = await supabase.auth.signOut();
+
+      if (error) {
+        status.textContent =
+          "ログアウトできませんでした。";
+        console.error(error);
+        return;
+      }
+
+      panel.classList.add("hidden");
+      loginButton.classList.remove("hidden");
+      password.value = "";
+      status.textContent = "ログアウトしました。";
+      presentationStatus.textContent = "";
+    }
+  );
 }
