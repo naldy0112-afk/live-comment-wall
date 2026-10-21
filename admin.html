@@ -24,6 +24,29 @@
 </div>
 
 <div id="adminComments"></div>
+      <hr>
+
+<h2>発表の管理</h2>
+
+<form id="presentationForm">
+  <label for="presentationTitle">新しい発表の名前</label>
+  <input
+    id="presentationTitle"
+    type="text"
+    maxlength="120"
+    placeholder="例：2026年度 課題研究発表"
+    required
+  >
+  <button type="submit">新しい発表を作成</button>
+</form>
+
+<p id="presentationStatus" role="status"></p>
+
+<h3>現在の発表</h3>
+<p id="currentPresentation">読み込み待ち</p>
+
+<h3>過去の発表</h3>
+<ul id="presentationList"></ul>
       <button id="backButton" type="button">ログイン画面に戻る</button>
     </section>
   </main>
