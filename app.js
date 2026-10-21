@@ -4,14 +4,20 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const mode = params.get("mode") || "display";
+if (mode === "admin") $("adminView").classList.remove("hidden");
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY ||
     SUPABASE_URL.includes("YOUR_PROJECT") || SUPABASE_ANON_KEY.includes("YOUR_SUPABASE")) {
   $("errorView").classList.remove("hidden");
 } else {
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  if (mode === "submit") setupSubmit(supabase);
-  else setupDisplay(supabase);
+ if (mode === "submit") {
+  setupSubmit(supabase);
+} else if (mode === "admin") {
+  setupAdmin(supabase);
+} else {
+  setupDisplay(supabase);
+}
 }
 
 function setupSubmit(supabase) {
@@ -95,4 +101,53 @@ async function setupDisplay(supabase) {
   setInterval(loadComments, 30000);
   // 表示コメントを10秒ごとにランダム切替
   setInterval(showRandom, 10000);
+}
+function setupAdmin(supabase) {
+  $("adminView").classList.remove("hidden");
+
+  const form = $("adminLoginForm");
+  const email = $("adminEmail");
+  const password = $("adminPassword");
+  const status = $("adminStatus");
+  const loginButton = $("adminLoginButton");
+  const panel = $("adminPanel");
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    loginButton.disabled = true;
+    status.textContent = "ログイン中…";
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.value.trim(),
+      password: password.value
+    });
+
+    loginButton.disabled = false;
+
+    if (error) {
+      status.textContent = "ログインできませんでした。メールアドレスとパスワードを確認してください。";
+      console.error(error);
+      return;
+    }
+
+    const { data: admin, error: adminError } = await supabase.rpc("is_admin");
+
+    if (adminError || admin !== true) {
+      await supabase.auth.signOut();
+      status.textContent = "このアカウントには管理者権限がありません。";
+      return;
+    }
+
+    status.textContent = "ログイン成功！";
+    panel.classList.remove("hidden");
+    form.querySelector("button[type='submit']").classList.add("hidden");
+  });
+
+  $("adminLogoutButton").addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    panel.classList.add("hidden");
+    form.querySelector("button[type='submit']").classList.remove("hidden");
+    password.value = "";
+    status.textContent = "ログアウトしました。";
+  });
 }
