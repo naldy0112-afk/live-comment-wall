@@ -203,6 +203,90 @@
 
       });
     }
+        const presentationForm =
+      document.getElementById("presentationForm");
+
+    presentationForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const titleInput =
+        document.getElementById("presentationTitle");
+      const status =
+        document.getElementById("presentationStatus");
+      const title = titleInput.value.trim();
+
+      if (!title) {
+        status.textContent = "発表名を入力してください。";
+        return;
+      }
+
+      status.textContent = "発表を作成しています…";
+
+      const { error } = await supabase.rpc(
+        "create_presentation",
+        { p_title: title }
+      );
+
+      if (error) {
+        console.error(error);
+        status.textContent =
+          "作成できませんでした。管理者権限やログイン状態を確認してください。";
+        return;
+      }
+
+      status.textContent = "新しい発表を作成しました！";
+      titleInput.value = "";
+      await loadPresentations();
+    });
+
+    async function loadPresentations() {
+      const current =
+        document.getElementById("currentPresentation");
+      const list =
+        document.getElementById("presentationList");
+
+      current.textContent = "読み込み中…";
+      list.replaceChildren();
+
+      const { data, error } = await supabase
+        .from("presentations")
+        .select("id, title, status, created_at")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        current.textContent = "発表を読み込めませんでした。";
+        console.error(error);
+        return;
+      }
+
+      const active = data.find(
+        (item) => item.status === "active"
+      );
+
+      current.textContent = active
+        ? active.title
+        : "開催中の発表はありません。";
+
+      const archived = data.filter(
+        (item) => item.status === "archived"
+      );
+
+      if (archived.length === 0) {
+        const li = document.createElement("li");
+        li.textContent = "過去の発表はまだありません。";
+        list.appendChild(li);
+        return;
+      }
+
+      archived.forEach((item) => {
+        const li = document.createElement("li");
+        li.textContent =
+          item.title + "（" +
+          new Date(item.created_at).toLocaleDateString("ja-JP") +
+          "）";
+        list.appendChild(li);
+      });
+    }
        await checkAdmin();
 
     if (document.getElementById("adminPageStatus").textContent
