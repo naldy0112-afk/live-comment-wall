@@ -1,0 +1,66 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理者専用ページ</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main class="submit-view">
+    <section class="submit-card">
+      <p class="eyebrow">ADMIN</p>
+      <h1>管理者専用ページ</h1>
+      <p>ログインを確認しています…</p>
+      <div id="adminPageStatus" role="status"></div>
+      <button id="backButton" type="button">ログイン画面に戻る</button>
+    </section>
+  </main>
+
+  <script type="module">
+    import { createClient } from
+      "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+    import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
+
+    const supabase = createClient(
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY
+    );
+
+    const status = document.getElementById("adminPageStatus");
+
+    async function checkAdmin() {
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.getSession();
+
+      if (sessionError || !sessionData.session) {
+        status.textContent =
+          "ログインしていません。管理者ログイン画面に戻ります。";
+        window.location.replace("./?mode=admin");
+        return;
+      }
+
+      const { data, error } = await supabase.rpc("is_admin");
+
+      if (error || data !== true) {
+        status.textContent =
+          "管理者権限を確認できませんでした。";
+        return;
+      }
+
+      status.textContent =
+        "ログイン成功！管理者専用ページです。";
+    }
+
+    document.getElementById("backButton").addEventListener(
+      "click",
+      () => {
+        window.location.href = "./?mode=admin";
+      }
+    );
+
+    checkAdmin();
+  </script>
+</body>
+</html>
