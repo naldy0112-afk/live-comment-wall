@@ -39,5 +39,29 @@
     <section class="submit-card"><h1>設定が必要です</h1><p>READMEの手順に沿って、SupabaseのURLと公開用anon keyを設定してください。</p></section>
   </main>
   <script type="module" src="app.js"></script>
+    <main id="adminView" class="submit-view hidden">
+    <section class="submit-card">
+      <p class="eyebrow">ADMIN</p>
+      <h1>管理者ログイン</h1>
+      <p class="muted">管理者アカウントでログインしてください。</p>
+
+      <form id="adminLoginForm">
+        <label for="adminEmail">メールアドレス</label>
+        <input id="adminEmail" type="email" autocomplete="username" required>
+
+        <label for="adminPassword">パスワード</label>
+        <input id="adminPassword" type="password" autocomplete="current-password" required>
+
+        <button id="adminLoginButton" type="submit">ログイン</button>
+        <p id="adminStatus" role="status" aria-live="polite"></p>
+      </form>
+
+      <section id="adminPanel" class="hidden">
+        <h2>発表の管理</h2>
+        <p>ログインしました。</p>
+        <button id="adminLogoutButton" type="button">ログアウト</button>
+      </section>
+    </section>
+  </main>
 </body>
 </html>
