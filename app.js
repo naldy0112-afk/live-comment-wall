@@ -110,16 +110,51 @@ async function setupDisplay(supabase) {
   }
 
   await loadComments();
-  // Supabase Realtimeで新規投稿を受信し、表示候補へ追加
+ 
+  // Supabase Realtimeで新規投稿を受信し、現在の発表のコメントだけ追加
+  let activePresentationId = null;
+
+  async function getActivePresentationId() {
+    const { data, error } = await supabase
+      .from("presentations")
+      .select("id")
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (error) {
+      console.error(error);
+      return null;
+    }
+
+    return data?.id ?? null;
+  }
+
+  activePresentationId = await getActivePresentationId();
+
   supabase.channel("public-comments")
-    .on("postgres_changes", { event: "INSERT", schema: "public", table: "comments" }, (payload) => {
-      const item = payload.new;
-      if (item && item.id && typeof item.body === "string" && !comments.some(c => c.id === item.id)) {
-        comments.unshift(item);
-        comments = comments.slice(0, 300);
-        $("commentTotal").textContent = `${comments.length}件のコメント`;
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "comments" },
+      async (payload) => {
+        const item = payload.new;
+
+        // 発表が切り替わっていないか確認
+        activePresentationId = await getActivePresentationId();
+
+        if (
+          activePresentationId &&
+          item &&
+          item.presentation_id === activePresentationId &&
+          item.id &&
+          typeof item.body === "string" &&
+          !comments.some(c => c.id === item.id)
+        ) {
+          comments.unshift(item);
+          comments = comments.slice(0, 300);
+          $("commentTotal").textContent = `${comments.length}件のコメント`;
+        }
       }
-    })
+    )
     .subscribe();
 
   // Realtimeの取りこぼし対策として定期的にも再取得
