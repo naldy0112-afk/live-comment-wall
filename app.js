@@ -35,16 +35,41 @@ function setupSubmit(supabase) {
     if (body.length > 200) { status.textContent = "200文字以内で入力してください。"; return; }
     button.disabled = true;
     status.textContent = "送信中…";
-    const { error } = await supabase.from("comments").insert({ body });
-    button.disabled = false;
-    if (error) {
-      status.textContent = "送信できませんでした。通信状況を確認して、もう一度お試しください。";
-      console.error(error);
-    } else {
-      input.value = "";
-      count.textContent = "0 / 200";
-      status.textContent = "送信しました。ありがとうございます！";
-    }
+  
+const { data: activePresentation, error: presentationError } =
+  await supabase
+    .from("presentations")
+    .select("id")
+    .eq("status", "active")
+    .maybeSingle();
+
+if (presentationError || !activePresentation) {
+  button.disabled = false;
+  status.textContent =
+    "現在の発表が見つかりません。管理者に確認してください。";
+  console.error(presentationError);
+  return;
+}
+
+const { error } = await supabase
+  .from("comments")
+  .insert({
+    body,
+    presentation_id: activePresentation.id
+  });
+
+button.disabled = false;
+
+if (error) {
+  status.textContent =
+    "送信できませんでした。通信状況を確認して、もう一度お試しください。";
+  console.error(error);
+} else {
+  input.value = "";
+  count.textContent = "0 / 200";
+  status.textContent = "送信しました。ありがとうございます！";
+}
+
   });
 }
 
