@@ -142,21 +142,44 @@ function setupAdmin(supabase) {
   const currentPresentation = $("currentPresentation");
   const presentationList = $("presentationList");
 
-  async function loadPresentations() {
-    currentPresentation.textContent = "読み込み中…";
-    presentationList.replaceChildren();
-
-    const { data, error } = await supabase
+ 
+async function loadComments() {
+  const { data: activePresentation, error: presentationError } =
+    await supabase
       .from("presentations")
-      .select("id, title, status, created_at")
-      .order("created_at", { ascending: false });
+      .select("id")
+      .eq("status", "active")
+      .maybeSingle();
 
-    if (error) {
-      currentPresentation.textContent =
-        "発表を読み込めませんでした。";
-      console.error(error);
-      return;
-    }
+  if (presentationError || !activePresentation) {
+    comments = [];
+    $("commentTotal").textContent = "0件のコメント";
+    $("displayStatus").textContent = "現在の発表がありません。";
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("comments")
+    .select("id, body, created_at, presentation_id")
+    .eq("presentation_id", activePresentation.id)
+    .order("created_at", { ascending: false })
+    .limit(300);
+
+  if (error) {
+    $("displayStatus").textContent =
+      "コメントを取得できません。Supabaseの設定を確認してください。";
+    console.error(error);
+    return;
+  }
+
+  comments = (data || []).filter(
+    c => typeof c.body === "string" && c.body.trim()
+  );
+
+  $("commentTotal").textContent = `${comments.length}件のコメント`;
+  showRandom();
+}
+
 
     const active = data.find(
       (item) => item.status === "active"
